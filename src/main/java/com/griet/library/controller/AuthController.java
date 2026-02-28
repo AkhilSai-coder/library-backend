@@ -20,7 +20,7 @@ public class AuthController {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
 
-    // ✅ REGISTER
+    // REGISTER
     @PostMapping("/registermembers")
     public String register(@RequestBody LoginRequest request,
                            @RequestParam Role role) {
@@ -28,14 +28,14 @@ public class AuthController {
         User user = new User();
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole(role);   // dynamic role
+        user.setRole(role);
 
         userRepository.save(user);
 
         return "User registered successfully";
     }
 
-    // ✅ LOGIN
+    // LOGIN
     @PostMapping("/login")
     public String login(@RequestBody LoginRequest request) {
 
@@ -53,18 +53,4 @@ public class AuthController {
                 user.getRole().name()
         );
     }
-
-    @PostMapping("/registermembers")
-public String register(@RequestBody LoginRequest request) {
-
-    var user = new com.griet.library.entity.User();
-
-    user.setEmail(request.getEmail());
-    user.setPassword(passwordEncoder.encode(request.getPassword()));
-    user.setRole(com.griet.library.entity.Role.MEMBER);
-
-    userRepository.save(user);
-
-    return "User registered successfully";
-}
 }
