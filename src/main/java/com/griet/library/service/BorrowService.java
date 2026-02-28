@@ -47,10 +47,10 @@ public class BorrowService {
         int dueDays;
 
         if (user.getRole() == Role.STUDENT) {
-            maxLimit = 3;
+            maxLimit = 30;
             dueDays = 7;
         } else if (user.getRole() == Role.FACULTY) {
-            maxLimit = 10;
+            maxLimit = 50;
             dueDays = 30;
         } else {
             throw new RuntimeException("Librarian cannot borrow books");
