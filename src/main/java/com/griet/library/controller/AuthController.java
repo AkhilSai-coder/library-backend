@@ -1,14 +1,8 @@
 package com.griet.library.controller;
 
 import com.griet.library.dto.LoginRequest;
-import com.griet.library.model.User;
-import com.griet.library.model.Role;
-import com.griet.library.repository.UserRepository;
-import com.griet.library.security.JwtService;
-
+import com.griet.library.service.AuthService;
 import lombok.RequiredArgsConstructor;
-
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin(origins = "https://charming-cajeta-c2f8f5.netlify.app")
@@ -17,41 +11,26 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final UserRepository userRepository;
-    private final JwtService jwtService;
-    private final PasswordEncoder passwordEncoder;
+    private final AuthService authService;
 
     // REGISTER
     @PostMapping("/registermembers")
-    public String register(@RequestBody LoginRequest request,
-                           @RequestParam Role role) {
-
-        User user = new User();
-        user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole(role);
-
-        userRepository.save(user);
-
-        return "User registered successfully";
+    public String register(@RequestBody LoginRequest request) {
+        return authService.register(
+                request.getName(),
+                request.getEmail(),
+                request.getPassword(),
+                request.getRole()
+        );
     }
 
     // LOGIN
     @PostMapping("/login")
     public String login(@RequestBody LoginRequest request) {
-
-        var user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        if (!passwordEncoder.matches(
+        return authService.login(
+                request.getEmail(),
                 request.getPassword(),
-                user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
-        }
-
-        return jwtService.generateToken(
-                user.getEmail(),
-                user.getRole().name()
+                request.getRole()
         );
     }
 }

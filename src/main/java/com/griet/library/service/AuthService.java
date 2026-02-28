@@ -36,7 +36,7 @@ public class AuthService {
     }
 
     // ================= LOGIN =================
-    public String login(String email, String password) {
+    public String login(String email, String password, Role role) {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -45,7 +45,10 @@ public class AuthService {
             throw new RuntimeException("Invalid password");
         }
 
-        // ✅ FIXED HERE
+        if (!user.getRole().equals(role)) {
+            throw new RuntimeException("Invalid role selected");
+        }
+
         return jwtService.generateToken(
                 user.getEmail(),
                 user.getRole().name()
