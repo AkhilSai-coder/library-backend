@@ -42,4 +42,18 @@ public class AuthController {
                 user.getRole().name()   // pass enum name
         );
     }
+
+    @PostMapping("/registermembers")
+public String register(@RequestBody LoginRequest request) {
+
+    var user = new com.griet.library.entity.User();
+
+    user.setEmail(request.getEmail());
+    user.setPassword(passwordEncoder.encode(request.getPassword()));
+    user.setRole(com.griet.library.entity.Role.MEMBER);
+
+    userRepository.save(user);
+
+    return "User registered successfully";
+}
 }
