@@ -1,0 +1,19 @@
+[33m02ed4a9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Connected frontend to Railway backend
+[33mde31a35[m Connected frontend to Railway backend
+[33m25034df[m Update application.properties
+[33m7292f22[m Update application.properties
+[33mbc9ac3d[m Refactored AuthController and added role validation
+[33me7357f2[m Connected frontend and backend to Railway backend
+[33m8416a68[m Update SecurityConfig.java
+[33mcdca1dd[m Update application.properties
+[33ma22c588[m Update AuthController.java
+[33m57fce3a[m Fix mvnw permission
+[33ma37d1fe[m Role based registration added
+[33ma94b3ad[m Role based registration added
+[33ma395fb7[m Update AuthController.java
+[33m7bcb308[m Update application.properties
+[33m4183bc3[m Update application.properties
+[33m6f28994[m Update application.properties
+[33m0af763b[m Refactor application.properties for database config
+[33me90cd48[m Update application.properties for server port and dialect
+[33md34195c[m Backend ready for deployment
