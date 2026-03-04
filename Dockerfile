@@ -5,8 +5,8 @@ WORKDIR /app
 COPY . .
 
 RUN chmod +x mvnw
-RUN ./mvnw clean package -DskipTests
+RUN ./mvnw clean package -DskipTests && mv target/*.jar app.jar
 
 EXPOSE 8080
 
-CMD ["sh","-c","java -jar target/*.jar"]
+CMD ["java","-jar","app.jar"]
