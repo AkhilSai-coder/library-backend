@@ -5,7 +5,7 @@ import com.griet.library.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-@CrossOrigin(origins = "https://griet-central-library.vercel.app/")
+@CrossOrigin(origins = "https://griet-central-library.vercel.app")
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
