@@ -3,14 +3,21 @@ package com.griet.library.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Service;
 
+import java.security.Key;
 import java.util.Date;
 
 @Service
 public class JwtService {
 
-    private static final String SECRET_KEY = "library-secret-key";
+    // ✅ FIXED: No hyphens, min 32 chars for HS256, using Keys.hmacShaKeyFor()
+    private static final String SECRET_KEY = "librarySuperSecretKey9876543210AB";
+
+    private Key getSigningKey() {
+        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+    }
 
 // ==============================
 // GENERATE TOKEN
@@ -25,7 +32,7 @@ public class JwtService {
                 .setExpiration(
                         new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)
                 ) // 24 hours
-                .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
@@ -35,8 +42,9 @@ public class JwtService {
 
     public String extractUsername(String token) {
 
-        Claims claims = Jwts.parser()
-                .setSigningKey(SECRET_KEY)
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
                 .parseClaimsJws(token)
                 .getBody();
 

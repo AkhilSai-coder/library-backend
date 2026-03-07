@@ -28,7 +28,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        String path = request.getServletPath();
+        String path = request.getRequestURI();
 
         // Allow CORS preflight
         if (request.getMethod().equals("OPTIONS")) {
@@ -36,7 +36,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // Skip authentication for login/register
+        // Skip authentication for auth endpoints
         if (path.startsWith("/auth")) {
             filterChain.doFilter(request, response);
             return;
@@ -51,8 +51,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = authHeader.substring(7);
 
-        try {
+        // Ensure token format is correct
+        if (token.split("\\.").length != 3) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
+        try {
             String collegeId = jwtService.extractUsername(token);
 
             if (collegeId != null &&
@@ -61,25 +66,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 var user = userRepository.findByCollegeId(collegeId).orElse(null);
 
                 if (user != null) {
-
                     var authorities = List.of(
                             new SimpleGrantedAuthority("ROLE_" + user.getRole())
                     );
 
-                    var authToken =
-                            new UsernamePasswordAuthenticationToken(
-                                    user.getCollegeId(),
-                                    null,
-                                    authorities
-                            );
+                    var authToken = new UsernamePasswordAuthenticationToken(
+                            user.getCollegeId(),
+                            null,
+                            authorities
+                    );
 
-                    SecurityContextHolder.getContext()
-                            .setAuthentication(authToken);
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
 
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) {}
 
         filterChain.doFilter(request, response);
     }
