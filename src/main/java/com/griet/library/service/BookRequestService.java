@@ -11,16 +11,16 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BookRequestService {
 
+
     private final BookRequestRepository requestRepo;
     private final BookRepository bookRepo;
     private final BorrowService borrowService;
     private final UserRepository userRepository;
-    private final BorrowRepository borrowRepository;
 
-    // ✅ Student creates request
-    public BookRequest createRequest(String email, Long bookId) {
+    // STUDENT CREATE REQUEST
+    public BookRequest createRequest(String collegeId, Long bookId) {
 
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByCollegeId(collegeId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Book book = bookRepo.findById(bookId)
@@ -35,24 +35,24 @@ public class BookRequestService {
         return requestRepo.save(request);
     }
 
-    // ✅ Librarian get pending requests
+    // LIBRARIAN VIEW PENDING REQUESTS
     public List<BookRequest> getPendingRequests() {
         return requestRepo.findByStatus(RequestStatus.PENDING);
     }
 
-    // ✅ Librarian approve request
+    // LIBRARIAN APPROVE REQUEST
     public String approveRequest(Long requestId) {
 
         BookRequest request = requestRepo.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
 
         if (request.getStatus() != RequestStatus.PENDING) {
-            return "Already processed";
+            return "Request already processed";
         }
 
-        // Create borrow record
+        // create borrow record
         borrowService.borrowBook(
-                request.getUser().getEmail(),
+                request.getUser().getCollegeId(),
                 request.getBook().getId()
         );
 
@@ -62,19 +62,10 @@ public class BookRequestService {
         return "Request approved successfully";
     }
 
-    // ✅ Student get their requests
-    public List<BookRequest> getMyRequests(String email) {
-        return requestRepo.findByUser_Email(email);
+    // STUDENT VIEW OWN REQUESTS
+    public List<BookRequest> getMyRequests(String collegeId) {
+        return requestRepo.findByUser_CollegeId(collegeId);
     }
 
-    public String returnBook(Long borrowId) {
 
-        Borrow borrow = borrowRepository.findById(borrowId)
-                .orElseThrow(() -> new RuntimeException("Borrow not found"));
-
-        borrow.setReturned(true);
-        borrowRepository.save(borrow);
-
-        return "Book returned successfully";
-    }
 }

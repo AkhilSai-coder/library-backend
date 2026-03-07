@@ -8,7 +8,10 @@ import java.util.List;
 
 public interface BookRequestRepository extends JpaRepository<BookRequest, Long> {
 
+    // find requests by status
     List<BookRequest> findByStatus(RequestStatus status);
 
-    List<BookRequest> findByUser_Email(String email); // ✅ FIXED
+    // find requests by user's college ID
+    List<BookRequest> findByUser_CollegeId(String collegeId);
+
 }

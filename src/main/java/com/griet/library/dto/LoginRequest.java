@@ -6,8 +6,9 @@ import lombok.Data;
 @Data
 public class LoginRequest {
 
-    private String name;     // needed for register
-    private String email;
+    private String name;
+    private String collegeId;
     private String password;
-    private Role role;       // VERY IMPORTANT
+    private Role role;
+
 }

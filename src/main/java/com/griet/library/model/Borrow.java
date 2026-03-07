@@ -6,11 +6,10 @@ import lombok.*;
 import java.time.LocalDate;
 
 @Entity
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Borrow {
 
     @Id
@@ -18,16 +17,22 @@ public class Borrow {
     private Long id;
 
     @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @ManyToOne
+    @JoinColumn(name = "book_id", nullable = false)
     private Book book;
 
     private LocalDate issueDate;
+
     private LocalDate dueDate;
 
-    private boolean returned;
+    private LocalDate returnDate;
 
-    private double fine;
+    @Builder.Default
+    private boolean returned = false;
 
+    @Builder.Default
+    private double fine = 0.0;
 }

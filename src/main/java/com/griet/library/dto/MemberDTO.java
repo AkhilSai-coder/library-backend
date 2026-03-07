@@ -11,4 +11,5 @@ public class MemberDTO {
     private String role;
     private int activeCount;
     private int historyCount;
+
 }

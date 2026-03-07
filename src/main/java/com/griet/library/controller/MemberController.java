@@ -25,19 +25,17 @@ public class MemberController {
 
         return users.stream().map(user -> {
 
-            int active = borrowRepository
-                    .findByUserAndReturnedFalse(user).size();
-
-            int history = borrowRepository
-                    .findByUserAndReturnedTrue(user).size();
+            long active = borrowRepository.countByUserAndReturnedFalse(user);
+            long history = borrowRepository.countByUserAndReturnedTrue(user);
 
             return new MemberDTO(
-                    user.getEmail(),          // or roll number
+                    user.getCollegeId(),
                     user.getRole().name(),
-                    active,
-                    history
+                    (int) active,
+                    (int) history
             );
 
         }).toList();
     }
+
 }

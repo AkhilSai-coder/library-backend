@@ -2,6 +2,7 @@ package com.griet.library.reports;
 
 import com.griet.library.model.Borrow;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -12,6 +13,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/reports")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "https://griet-central-library.vercel.app")
 public class ReportsController {
 
     private final ReportsService reportsService;
@@ -40,4 +42,5 @@ public class ReportsController {
     public List<Map<String, Object>> getBorrowTrend() {
         return reportsService.getBorrowTrend();
     }
+
 }

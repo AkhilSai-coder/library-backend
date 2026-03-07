@@ -16,11 +16,14 @@ public class BookRequest {
     private Long id;
 
     @ManyToOne
-    private User user;   // ✅ FIXED (instead of String userEmail)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @ManyToOne
+    @JoinColumn(name = "book_id", nullable = false)
     private Book book;
 
     @Enumerated(EnumType.STRING)
-    private RequestStatus status;
+    @Builder.Default
+    private RequestStatus status = RequestStatus.PENDING;
 }

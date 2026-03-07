@@ -8,10 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -21,14 +18,19 @@ public class ReportsService {
     private final BorrowRepository borrowRepository;
     private final UserRepository userRepository;
 
+// ==============================
+// SYSTEM OVERVIEW REPORT
+// ==============================
+
     public Map<String, Object> getSystemStats() {
 
         long totalBooks = bookRepository.count();
-        long borrowedBooks = borrowRepository.findByReturnedFalse().size();
+        long borrowedBooks = borrowRepository.countByReturnedFalse();
         long availableBooks = totalBooks - borrowedBooks;
         long totalUsers = userRepository.count();
 
         Map<String, Object> stats = new HashMap<>();
+
         stats.put("totalBooks", totalBooks);
         stats.put("borrowedBooks", borrowedBooks);
         stats.put("availableBooks", availableBooks);
@@ -36,6 +38,10 @@ public class ReportsService {
 
         return stats;
     }
+
+// ==============================
+// FINE REPORT
+// ==============================
 
     public Map<String, Object> getFineReport() {
 
@@ -46,6 +52,7 @@ public class ReportsService {
         if (pending == null) pending = 0.0;
 
         Map<String, Object> report = new HashMap<>();
+
         report.put("totalCollectedFine", collected);
         report.put("totalPendingFine", pending);
         report.put("totalFineGenerated", collected + pending);
@@ -53,10 +60,19 @@ public class ReportsService {
         return report;
     }
 
+// ==============================
+// OVERDUE BOOKS
+// ==============================
+
     public List<Borrow> getOverdueBooks() {
+
         return borrowRepository
                 .findByReturnedFalseAndDueDateBefore(LocalDate.now());
     }
+
+// ==============================
+// MOST BORROWED BOOKS
+// ==============================
 
     public List<Map<String, Object>> getMostBorrowedBooks() {
 
@@ -67,6 +83,7 @@ public class ReportsService {
         for (Object[] row : results) {
 
             Map<String, Object> data = new HashMap<>();
+
             data.put("title", row[0]);
             data.put("borrowCount", row[1]);
 
@@ -75,6 +92,10 @@ public class ReportsService {
 
         return response;
     }
+
+// ==============================
+// MONTHLY BORROW TREND
+// ==============================
 
     public List<Map<String, Object>> getBorrowTrend() {
 
@@ -85,6 +106,7 @@ public class ReportsService {
         for (Object[] row : results) {
 
             Map<String, Object> data = new HashMap<>();
+
             data.put("month", row[0]);
             data.put("borrowCount", row[1]);
 
@@ -93,4 +115,5 @@ public class ReportsService {
 
         return response;
     }
+
 }

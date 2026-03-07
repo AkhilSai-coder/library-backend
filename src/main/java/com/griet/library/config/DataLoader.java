@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+
 @Component
 @RequiredArgsConstructor
 public class DataLoader implements CommandLineRunner {
@@ -18,10 +20,12 @@ public class DataLoader implements CommandLineRunner {
         if (bookRepository.count() == 0) {
 
             for (int i = 1; i <= 50; i++) {
+
                 Book book = Book.builder()
                         .title("Book Title " + i)
-                        .author("Author " + i)
-                        .price(500.0 + i)
+                        .authors("Author " + i)
+                        .price(BigDecimal.valueOf(500 + i))
+                        .available(true)
                         .build();
 
                 bookRepository.save(book);
@@ -30,4 +34,5 @@ public class DataLoader implements CommandLineRunner {
             System.out.println("50 books inserted successfully!");
         }
     }
+
 }

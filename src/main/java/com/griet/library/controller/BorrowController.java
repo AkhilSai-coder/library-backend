@@ -3,7 +3,6 @@ package com.griet.library.controller;
 import com.griet.library.model.Borrow;
 import com.griet.library.service.BorrowService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -17,30 +16,45 @@ public class BorrowController {
 
     private final BorrowService borrowService;
 
-    @GetMapping("/my")
+    /* ==============================
+       STUDENT / FACULTY VIEW MY BOOKS
+       ============================== */
+
     @PreAuthorize("hasAnyRole('STUDENT','FACULTY')")
+    @GetMapping("/my-books")
     public List<Borrow> myBorrows(Authentication authentication) {
         return borrowService.getMyBooks(authentication.getName());
     }
 
-    @GetMapping("/all")
+    /* ==============================
+       LIBRARIAN VIEW ALL BORROWS
+       ============================== */
+
     @PreAuthorize("hasRole('LIBRARIAN')")
+    @GetMapping("/all")
     public List<Borrow> allBorrows() {
         return borrowService.getAllBorrows();
     }
 
+    /* ==============================
+       RETURN BOOK
+       ============================== */
+
+    @PreAuthorize("hasAnyRole('STUDENT','FACULTY')")
     @PostMapping("/return/{borrowId}")
-    @PreAuthorize("hasRole('LIBRARIAN')")
     public String returnBook(@PathVariable Long borrowId) {
         return borrowService.returnBook(borrowId);
     }
 
-    @PostMapping("/issue/{bookId}/{email}")
-    public ResponseEntity<?> issueBook(
-            @PathVariable Long bookId,
-            @PathVariable String email) {
+    /* ==============================
+       ISSUE BOOK (LIBRARIAN)
+       ============================== */
 
-        borrowService.issueBook(bookId, email);
-        return ResponseEntity.ok("Issued");
+    @PostMapping("/issue")
+    @PreAuthorize("hasRole('LIBRARIAN')")
+    public void issueBook(@RequestParam Long bookId,
+                          @RequestParam String collegeId) {
+
+        borrowService.issueBook(bookId, collegeId);
     }
 }

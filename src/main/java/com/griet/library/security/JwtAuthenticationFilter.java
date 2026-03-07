@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -29,12 +30,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
 
+        // Allow CORS preflight
         if (request.getMethod().equals("OPTIONS")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // ✅ Skip authentication for login endpoints
+        // Skip authentication for login/register
         if (path.startsWith("/auth")) {
             filterChain.doFilter(request, response);
             return;
@@ -42,7 +44,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
-        // ✅ If no token → continue without authentication
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -52,41 +53,35 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
 
-            String email = jwtService.extractEmail(token);
+            String collegeId = jwtService.extractUsername(token);
 
-            // ✅ Only authenticate if not already authenticated
-            if (email != null &&
+            if (collegeId != null &&
                     SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                var user = userRepository.findByEmail(email).orElse(null);
+                var user = userRepository.findByCollegeId(collegeId).orElse(null);
 
                 if (user != null) {
 
-                    // 🔥 IMPORTANT: Add ROLE_ prefix
                     var authorities = List.of(
-                            new org.springframework.security.core.authority.
-                                    SimpleGrantedAuthority(
-                                    "ROLE_" + user.getRole().name()
-                            )
+                            new SimpleGrantedAuthority("ROLE_" + user.getRole())
                     );
 
                     var authToken =
                             new UsernamePasswordAuthenticationToken(
-                                    user.getEmail(),   // 🔥 THIS IS THE FIX
+                                    user.getCollegeId(),
                                     null,
                                     authorities
                             );
 
-                    SecurityContextHolder
-                            .getContext()
+                    SecurityContextHolder.getContext()
                             .setAuthentication(authToken);
                 }
             }
 
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ignored) {
         }
 
         filterChain.doFilter(request, response);
     }
+
 }

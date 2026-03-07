@@ -1,17 +1,13 @@
 package com.griet.library.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+import lombok.*;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.Builder;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Entity
+@Table(name = "books")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,7 +19,41 @@ public class Book {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true, nullable = false)
+    private String accessionNumber;
+
+    @Column(nullable = false)
     private String title;
-    private String author;
-    private Double price;
+
+    @Column(nullable = false)
+    private String authors;
+
+    private String publisher;
+
+    private String placeOfPublication;
+
+    private int year;
+
+    @Column(unique = true)
+    private String isbn;
+
+    private int pages;
+
+    private String source;
+
+    private BigDecimal price;
+
+    private String billNo;
+
+    private LocalDate billDate;
+
+    private String type;
+
+    private String category;
+
+    private String branch;
+
+    private int recommendedYear;
+
+    private boolean available = true;
 }

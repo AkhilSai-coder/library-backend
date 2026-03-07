@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
 
+
     private final AuthService authService;
 
     // REGISTER
@@ -18,7 +19,7 @@ public class AuthController {
     public String register(@RequestBody LoginRequest request) {
         return authService.register(
                 request.getName(),
-                request.getEmail(),
+                request.getCollegeId(),
                 request.getPassword(),
                 request.getRole()
         );
@@ -28,9 +29,10 @@ public class AuthController {
     @PostMapping("/login")
     public String login(@RequestBody LoginRequest request) {
         return authService.login(
-                request.getEmail(),
+                request.getCollegeId(),
                 request.getPassword(),
                 request.getRole()
         );
     }
+
 }

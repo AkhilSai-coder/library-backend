@@ -20,32 +20,31 @@ public class BookRequestController {
     @PostMapping("/{bookId}")
     public BookRequest requestBook(@PathVariable Long bookId,
                                    Authentication authentication) {
-        String email = authentication.getName();
-        return requestService.createRequest(email, bookId);
+
+        String collegeId = authentication.getName();
+        return requestService.createRequest(collegeId, bookId);
     }
 
-    // Librarian view pending
+    // Librarian view pending requests
     @GetMapping("/pending")
+    @PreAuthorize("hasRole('LIBRARIAN')")
     public List<BookRequest> pendingRequests() {
         return requestService.getPendingRequests();
     }
 
-    // Librarian approve
+    // Librarian approve request
     @PostMapping("/approve/{id}")
     @PreAuthorize("hasRole('LIBRARIAN')")
-    public String approve(@PathVariable Long id, Authentication authentication) {
-
-        System.out.println("USER: " + authentication.getName());
-        System.out.println("ROLES: " + authentication.getAuthorities());
-
+    public String approve(@PathVariable Long id) {
         return requestService.approveRequest(id);
     }
 
-    // ✅ ADD THIS
+    // User view own requests
     @GetMapping("/my")
     public List<BookRequest> myRequests(Authentication authentication) {
-        String email = authentication.getName();
-        return requestService.getMyRequests(email);
+
+        String collegeId = authentication.getName();
+        return requestService.getMyRequests(collegeId);
     }
 
 }

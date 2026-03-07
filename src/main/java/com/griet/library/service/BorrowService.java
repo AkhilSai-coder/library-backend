@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
@@ -21,42 +22,48 @@ public class BorrowService {
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
 
-    /* ==============================
-       BORROW BOOK (called on approve)
-    ============================== */
-    public Borrow borrowBook(String email, Long bookId) {
+    private static final double FINE_PER_DAY = 10;
 
-        User user = userRepository.findByEmail(email)
+// ==============================
+// BORROW BOOK
+// ==============================
+
+    public Borrow borrowBook(String collegeId, Long bookId) {
+
+        User user = userRepository.findByCollegeId(collegeId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new RuntimeException("Book not found"));
 
-        // Prevent duplicate borrow
         boolean alreadyBorrowed =
                 borrowRepository.existsByUserAndBookAndReturnedFalse(user, book);
 
         if (alreadyBorrowed) {
-            throw new RuntimeException("Book already borrowed");
+            throw new RuntimeException("You already borrowed this book");
         }
 
-        List<Borrow> activeBorrows =
-                borrowRepository.findByUserAndReturnedFalse(user);
+        if (!book.isAvailable()) {
+            throw new RuntimeException("Book not available");
+        }
+
+        long activeBorrows =
+                borrowRepository.countByUserAndReturnedFalse(user);
 
         int maxLimit;
         int dueDays;
 
         if (user.getRole() == Role.STUDENT) {
-            maxLimit = 30;
+            maxLimit = 3;
             dueDays = 7;
         } else if (user.getRole() == Role.FACULTY) {
-            maxLimit = 50;
+            maxLimit = 5;
             dueDays = 30;
         } else {
             throw new RuntimeException("Librarian cannot borrow books");
         }
 
-        if (activeBorrows.size() >= maxLimit) {
+        if (activeBorrows >= maxLimit) {
             throw new RuntimeException("Borrow limit exceeded");
         }
 
@@ -69,16 +76,20 @@ public class BorrowService {
                 .fine(0.0)
                 .build();
 
+        book.setAvailable(false);
+        bookRepository.save(book);
+
         return borrowRepository.save(borrow);
     }
 
-    /* ==============================
-       RETURN BOOK
-    ============================== */
+// ==============================
+// RETURN BOOK
+// ==============================
+
     public String returnBook(Long borrowId) {
 
         Borrow borrow = borrowRepository.findById(borrowId)
-                .orElseThrow(() -> new RuntimeException("Borrow record not found"));
+                .orElseThrow(() -> new RuntimeException("Borrow not found"));
 
         if (borrow.isReturned()) {
             return "Book already returned";
@@ -89,40 +100,50 @@ public class BorrowService {
         if (today.isAfter(borrow.getDueDate())) {
 
             long overdueDays =
-                    java.time.temporal.ChronoUnit.DAYS
-                            .between(borrow.getDueDate(), today);
+                    ChronoUnit.DAYS.between(borrow.getDueDate(), today);
 
-            double fineAmount = overdueDays * 10; // ₹10 per day
-            borrow.setFine(fineAmount);
+            double fine = overdueDays * FINE_PER_DAY;
+
+            borrow.setFine(fine);
         }
 
         borrow.setReturned(true);
+
+        Book book = borrow.getBook();
+        book.setAvailable(true);
+
+        bookRepository.save(book);
         borrowRepository.save(borrow);
 
         return "Book returned successfully";
     }
 
-    /* ==============================
-       GET MY BOOKS (FIXED)
-    ============================== */
-    public List<Borrow> getMyBooks(String email) {
+// ==============================
+// USER BORROW HISTORY
+// ==============================
 
-        System.out.println("EMAIL FROM JWT: " + email);
+    public List<Borrow> getMyBooks(String collegeId) {
 
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByCollegeId(collegeId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         return borrowRepository.findByUser(user);
     }
 
-    /* ==============================
-       GET ALL BORROWS (Librarian)
-    ============================== */
+// ==============================
+// LIBRARIAN VIEW ALL BORROWS
+// ==============================
+
     public List<Borrow> getAllBorrows() {
         return borrowRepository.findAll();
     }
 
-    public void issueBook(Long bookId, String email) {
-        borrowBook(email, bookId);
+// ==============================
+// ISSUE BOOK (LIBRARIAN)
+// ==============================
+
+    public void issueBook(Long bookId, String collegeId) {
+        borrowBook(collegeId, bookId);
     }
+
 }
