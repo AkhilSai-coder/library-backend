@@ -22,6 +22,7 @@ public class DataLoader implements CommandLineRunner {
             for (int i = 1; i <= 50; i++) {
 
                 Book book = Book.builder()
+                        .accessionNumber("ACC" + String.format("%03d", i))
                         .title("Book Title " + i)
                         .authors("Author " + i)
                         .price(BigDecimal.valueOf(500 + i))
