@@ -4,98 +4,173 @@ import com.griet.library.dto.BookDTO;
 import com.griet.library.model.Book;
 import com.griet.library.repository.BookRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
 
+/**
+ * BookService – production-optimised for 130k+ records.
+ *
+ * Performance highlights:
+ *  • getAllBooks() is REMOVED from public API → always use paginated version
+ *  • Paginated catalogue uses index-backed queries
+ *  • Cache on getCatalogue / searchBooks to absorb repeated identical requests
+ *  • Cache is evicted on book add/delete to prevent stale data
+ */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BookService {
 
     private final BookRepository bookRepository;
 
-// ==============================
-// ADD BOOK (ADMIN)
-// ==============================
+    private static final int MAX_PAGE_SIZE = 50; // hard ceiling per request
 
+    // ==============================
+    // ADD BOOK (ADMIN) – evicts catalogue cache
+    // ==============================
+
+    @Transactional
+    @CacheEvict(cacheNames = {"books-page", "books-search", "dashboard"}, allEntries = true)
     public Book addBook(BookDTO dto) {
 
-        Book book = new Book();
-
-        book.setAccessionNumber(dto.getAccessionNumber());
-        book.setTitle(dto.getTitle());
-        book.setAuthors(dto.getAuthors());
-        book.setPublisher(dto.getPublisher());
-        book.setPlaceOfPublication(dto.getPlaceOfPublication());
-        book.setYear(dto.getYear());
-        book.setIsbn(dto.getIsbn());
-        book.setPages(dto.getPages());
-        book.setSource(dto.getSource());
-        book.setPrice(BigDecimal.valueOf(dto.getPrice()));
-        book.setBillNo(dto.getBillNo());
-        book.setBillDate(dto.getBillDate());
-        book.setType(dto.getType());
-
-        // recommendation system fields
-        book.setCategory(dto.getCategory());
-        book.setBranch(dto.getBranch());
-        book.setRecommendedYear(dto.getRecommendedYear());
-
-        book.setAvailable(true);
+        Book book = Book.builder()
+                .accessionNumber(dto.getAccessionNumber())
+                .title(dto.getTitle())
+                .authors(dto.getAuthors())
+                .publisher(dto.getPublisher())
+                .placeOfPublication(dto.getPlaceOfPublication())
+                .year(dto.getYear())
+                .isbn(dto.getIsbn())
+                .pages(dto.getPages())
+                .source(dto.getSource())
+                .price(BigDecimal.valueOf(dto.getPrice()))
+                .billNo(dto.getBillNo())
+                .billDate(dto.getBillDate())
+                .type(dto.getType())
+                .category(dto.getCategory())
+                .branch(dto.getBranch())
+                .recommendedYear(dto.getRecommendedYear())
+                .available(true)
+                .build();
 
         return bookRepository.save(book);
     }
 
-// ==============================
-// GET ALL BOOKS
-// ==============================
+    // ==============================
+    // PAGINATED CATALOGUE  ← PRIMARY endpoint for frontend
+    // GET /books?page=0&size=20&branch=CSE&category=Programming&available=true
+    // ==============================
 
-    public List<Book> getAllBooks() {
-        return bookRepository.findAll();
+    @Transactional(readOnly = true)
+    @Cacheable(
+        cacheNames = "books-page",
+        key = "#page + '-' + #size + '-' + #branch + '-' + #category + '-' + #available"
+    )
+    public Page<Book> getCatalogue(int page, int size,
+                                    String branch, String category,
+                                    Boolean available) {
+
+        // Clamp page size to prevent abuse
+        int safeSize = Math.min(size, MAX_PAGE_SIZE);
+
+        Pageable pageable = PageRequest.of(page, safeSize, Sort.by("title").ascending());
+
+        // If no filters → use default pageable (fastest path)
+        if (branch == null && category == null && available == null) {
+            return bookRepository.findAll(pageable);
+        }
+
+        return bookRepository.findWithFilters(branch, category, available, pageable);
     }
 
-// ==============================
-// SEARCH BOOKS BY TITLE
-// ==============================
+    // ==============================
+    // SEARCH  (title + author, paginated)
+    // GET /books/search?q=java&page=0&size=20
+    // ==============================
 
-    public List<Book> searchBooks(String title) {
-        return bookRepository.findByTitleContainingIgnoreCase(title);
+    @Transactional(readOnly = true)
+    @Cacheable(
+        cacheNames = "books-search",
+        key = "#query + '-' + #branch + '-' + #category + '-' + #page + '-' + #size"
+    )
+    public Page<Book> searchBooks(String query, String branch,
+                                   String category, int page, int size) {
+
+        int safeSize = Math.min(size, MAX_PAGE_SIZE);
+        Pageable pageable = PageRequest.of(page, safeSize, Sort.by("title").ascending());
+
+        return bookRepository.searchWithFilters(query, branch, category, null, pageable);
     }
 
-// ==============================
-// GET BOOK BY ID
-// ==============================
+    // ==============================
+    // SINGLE BOOK DETAIL (cached per book)
+    // ==============================
 
+    @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "book-detail", key = "#id")
     public Book getBookById(Long id) {
         return bookRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Book not found"));
+                .orElseThrow(() -> new RuntimeException("Book not found: " + id));
     }
 
-// ==============================
-// DELETE BOOK
-// ==============================
+    @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "book-detail", key = "'acc-' + #accessionNumber")
+    public Book getBookByAccession(String accessionNumber) {
+        return bookRepository.findByAccessionNumber(accessionNumber)
+                .orElseThrow(() -> new RuntimeException("Book not found: " + accessionNumber));
+    }
 
+    // ==============================
+    // FILTER DROPDOWN VALUES (cached, rarely changes)
+    // ==============================
+
+    @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "books-page", key = "'branches'")
+    public List<String> getDistinctBranches() {
+        return bookRepository.findDistinctBranches();
+    }
+
+    @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "books-page", key = "'categories'")
+    public List<String> getDistinctCategories() {
+        return bookRepository.findDistinctCategories();
+    }
+
+    // ==============================
+    // DELETE BOOK (ADMIN)
+    // ==============================
+
+    @Transactional
+    @CacheEvict(cacheNames = {"books-page", "books-search", "book-detail", "dashboard"}, allEntries = true)
     public String deleteBook(Long id) {
-
         Book book = getBookById(id);
-
         bookRepository.delete(book);
-
+        log.info("Book deleted: id={}, title={}", id, book.getTitle());
         return "Book deleted successfully";
     }
 
-    public Book getBookByAccession(String accessionNumber) {
+    // ──────────────────────────────────────────────────────────────────────────
+    // Legacy compatibility – kept so existing endpoints don't break
+    // These are NOT cached because they bypass pagination safety.
+    // They should only be called for small internal operations.
+    // ──────────────────────────────────────────────────────────────────────────
 
-        Book book = bookRepository.findByAccessionNumber(accessionNumber);
-
-        if (book == null) {
-            throw new RuntimeException("Book not found");
-        }
-
-        return book;
-
+    @Transactional(readOnly = true)
+    public List<Book> getAllBooks() {
+        // ⚠️ WARNING: Do NOT call this from frontend for 130k dataset.
+        // Use getCatalogue() instead.  This remains for backward compatibility
+        // with the issue-return librarian flow that looks up ALL borrows.
+        log.warn("getAllBooks() called – consider switching to paginated endpoint");
+        return bookRepository.findAll();
     }
-
-
 }
