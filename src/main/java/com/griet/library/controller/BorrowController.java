@@ -40,9 +40,9 @@ public class BorrowController {
        RETURN BOOK
        ============================== */
 
-    @PreAuthorize("hasAnyRole('STUDENT','FACULTY')")
-    @PostMapping("/return/{borrowId}")
-    public String returnBook(@PathVariable Long borrowId) {
+    @PreAuthorize("hasRole('LIBRARIAN')")
+@PostMapping("/return/{borrowId}")
+public String returnBook(@PathVariable Long borrowId) {
         return borrowService.returnBook(borrowId);
     }
 
