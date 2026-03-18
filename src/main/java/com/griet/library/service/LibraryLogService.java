@@ -1,18 +1,20 @@
 package com.griet.library.service;
 
-import com.griet.library.dto.ScanResponse;
-import com.griet.library.model.LibraryLog;
-import com.griet.library.repository.LibraryLogRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.griet.library.dto.ScanResponse;
+import com.griet.library.model.LibraryLog;
+import com.griet.library.repository.LibraryLogRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -60,24 +62,24 @@ public class LibraryLogService {
 
     private ScanResponse recordEntry(String collegeId) {
 
-        LibraryLog log = LibraryLog.builder()
-                .collegeId(collegeId)
-                .entryTime(LocalDateTime.now())
-                .build();
+    LibraryLog libraryLog = LibraryLog.builder()
+            .collegeId(collegeId)
+            .entryTime(LocalDateTime.now())
+            .build();
 
-        libraryLogRepository.save(log);
+    libraryLogRepository.save(libraryLog);
 
-        log.info("ENTRY recorded → collegeId={} at {}", collegeId, log.getEntryTime());
+    log.info("ENTRY recorded → collegeId={} at {}", collegeId, libraryLog.getEntryTime());
 
-        return new ScanResponse(
-                "Entry recorded",
-                "ENTRY",
-                collegeId,
-                log.getEntryTime(),
-                null,
-                null
-        );
-    }
+    return new ScanResponse(
+            "Entry recorded",
+            "ENTRY",
+            collegeId,
+            libraryLog.getEntryTime(),
+            null,
+            null
+    );
+}
 
     private ScanResponse recordExit(LibraryLog openLog) {
 
