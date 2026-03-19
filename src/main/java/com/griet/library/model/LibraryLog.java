@@ -2,7 +2,6 @@ package com.griet.library.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -10,9 +9,10 @@ import java.time.LocalDateTime;
 @Table(
     name = "library_logs",
     indexes = {
-        @Index(name = "idx_library_logs_college_id",  columnList = "college_id"),
-        @Index(name = "idx_library_logs_entry_time",  columnList = "entry_time"),
-        @Index(name = "idx_library_logs_active_entry", columnList = "college_id, exit_time")
+        @Index(name = "idx_library_logs_college_id",   columnList = "college_id"),
+        @Index(name = "idx_library_logs_entry_time",   columnList = "entry_time"),
+        @Index(name = "idx_library_logs_active_entry", columnList = "college_id, exit_time"),
+        @Index(name = "idx_library_logs_year_branch",  columnList = "year, branch")
     }
 )
 @Data
@@ -25,24 +25,28 @@ public class LibraryLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** College roll number / barcode printed on student ID card */
     @Column(name = "college_id", nullable = false, length = 50)
     private String collegeId;
 
-    /** Set automatically on insert */
+    /** 1 / 2 / 3 / 4 */
+    @Column(name = "year")
+    private Integer year;
+
+    /** CSE, ECE, MECH … */
+    @Column(name = "branch", length = 20)
+    private String branch;
+
+    /** A / B / C … */
+    @Column(name = "section", length = 5)
+    private String section;
+
     @Column(name = "entry_time", nullable = false, updatable = false)
     private LocalDateTime entryTime;
 
-    /** NULL while student is still inside; set on exit scan */
+    /** NULL while student is still inside */
     @Column(name = "exit_time")
     private LocalDateTime exitTime;
 
-    // ── Derived helper (not persisted) ────────────────────────────────────────
-
-    /**
-     * Returns total minutes spent inside the library.
-     * Only meaningful when exitTime is not null.
-     */
     @Transient
     public Long getDurationMinutes() {
         if (entryTime == null || exitTime == null) return null;
