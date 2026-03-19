@@ -11,85 +11,55 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
-/**
- * REST controller for the library entry/exit tracking feature.
- *
- * Endpoints:
- *   POST /api/scan?collegeId=XXX          — barcode scan (entry or exit)
- *   GET  /api/logs/today                  — today's log list (LIBRARIAN only)
- *   GET  /api/logs/student/{collegeId}    — student history  (LIBRARIAN only)
- *
- * The scan endpoint is deliberately permitted for LIBRARIAN role only — the
- * physical barcode scanner at the library gate is operated by staff. Adjust
- * the @PreAuthorize annotation if you want kiosk/self-service access.
- */
 @RestController
 @RequiredArgsConstructor
 public class LibraryLogController {
 
     private final LibraryLogService libraryLogService;
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  POST /api/scan?collegeId=XXX
-    // ══════════════════════════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
+    //  POST /api/scan?collegeId=XXX&mode=ENTRY&year=2&branch=CSE&section=A
+    // ══════════════════════════════════════════════════════════════
 
-    /**
-     * Main scan endpoint — called every time a student swipes/scans their
-     * ID card at the library gate.
-     *
-     * <p>Returns HTTP 200 with a {@link ScanResponse} describing whether an
-     * entry or exit was recorded, plus timestamp and duration details.</p>
-     *
-     * <p>Returns HTTP 400 if the collegeId is blank or missing.</p>
-     */
     @PreAuthorize("hasRole('LIBRARIAN')")
     @PostMapping("/api/scan")
-    public ResponseEntity<?> scan(@RequestParam String collegeId) {
-
+    public ResponseEntity<?> scan(
+            @RequestParam String collegeId,
+            @RequestParam(defaultValue = "ENTRY") String mode,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) String branch,
+            @RequestParam(required = false) String section
+    ) {
         try {
-            ScanResponse response = libraryLogService.processScan(collegeId);
+            ScanResponse response = libraryLogService.processScan(collegeId, mode, year, branch, section);
             return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(Map.of("error", ex.getMessage()));
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
     //  GET /api/logs/today
-    // ══════════════════════════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
 
-    /**
-     * Returns all entry/exit records for today, ordered by entry_time DESC.
-     * Intended for the librarian dashboard "Who is in the library right now?"
-     * view.
-     */
     @PreAuthorize("hasRole('LIBRARIAN')")
     @GetMapping("/api/logs/today")
     public List<LibraryLog> todaysLogs() {
         return libraryLogService.getTodaysLogs();
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
     //  GET /api/logs/student/{collegeId}
-    // ══════════════════════════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
 
-    /**
-     * Returns the complete visit history for a single student, most recent
-     * visit first. Includes duration (minutes) for completed visits.
-     */
     @PreAuthorize("hasRole('LIBRARIAN')")
     @GetMapping("/api/logs/student/{collegeId}")
     public ResponseEntity<?> studentHistory(@PathVariable String collegeId) {
-
         try {
             List<LibraryLog> logs = libraryLogService.getStudentHistory(collegeId);
             return ResponseEntity.ok(logs);
         } catch (IllegalArgumentException ex) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(Map.of("error", ex.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
         }
     }
 }
