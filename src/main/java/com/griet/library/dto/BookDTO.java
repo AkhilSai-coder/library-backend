@@ -1,8 +1,8 @@
 package com.griet.library.dto;
 
-import lombok.Data;
-
 import java.time.LocalDate;
+
+import lombok.Data;
 
 @Data
 public class BookDTO {
@@ -12,11 +12,11 @@ public class BookDTO {
     private String authors;
     private String publisher;
     private String placeOfPublication;
-    private int year;
+    private Integer year;           // was int
     private String isbn;
-    private int pages;
+    private Integer pages;          // was int
     private String source;
-    private double price;
+    private Double price;           // was double
     private String billNo;
     private LocalDate billDate;
     private String type;
@@ -24,6 +24,6 @@ public class BookDTO {
     // recommendation fields
     private String category;
     private String branch;
-    private int recommendedYear;
+    private Integer recommendedYear; // was int
 
 }

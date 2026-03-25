@@ -1,10 +1,8 @@
 package com.griet.library.service;
 
-import com.griet.library.dto.BookDTO;
-import com.griet.library.model.Book;
-import com.griet.library.repository.BookRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.math.BigDecimal;
+import java.util.List;
+
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
@@ -14,8 +12,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.util.List;
+import com.griet.library.dto.BookDTO;
+import com.griet.library.model.Book;
+import com.griet.library.repository.BookRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * BookService – production-optimised for 130k+ records.
@@ -40,32 +42,34 @@ public class BookService {
     // ==============================
 
     @Transactional
-    @CacheEvict(cacheNames = {"books-page", "books-search", "dashboard"}, allEntries = true)
-    public Book addBook(BookDTO dto) {
+@CacheEvict(cacheNames = {"books-page", "books-search", "dashboard"}, allEntries = true)
+public Book addBook(BookDTO dto) {
 
-        Book book = Book.builder()
-                .accessionNumber(dto.getAccessionNumber())
-                .title(dto.getTitle())
-                .authors(dto.getAuthors())
-                .publisher(dto.getPublisher())
-                .placeOfPublication(dto.getPlaceOfPublication())
-                .year(dto.getYear())
-                .isbn(dto.getIsbn())
-                .pages(dto.getPages())
-                .source(dto.getSource())
-                .price(BigDecimal.valueOf(dto.getPrice()))
-                .billNo(dto.getBillNo())
-                .billDate(dto.getBillDate())
-                .type(dto.getType())
-                .category(dto.getCategory())
-                .branch(dto.getBranch())
-                .recommendedYear(dto.getRecommendedYear())
-                .available(true)
-                .build();
+    Book book = Book.builder()
+            .accessionNumber(dto.getAccessionNumber())
+            .title(dto.getTitle())
+            .authors(dto.getAuthors())
+            .publisher(dto.getPublisher())
+            .placeOfPublication(dto.getPlaceOfPublication())
+            .year(dto.getYear()  != null ? dto.getYear()  : 0)   // null-safe
+            .isbn(dto.getIsbn())
+            .pages(dto.getPages() != null ? dto.getPages() : 0)  // null-safe
+            .source(dto.getSource())
+            .price(dto.getPrice() != null
+                    ? BigDecimal.valueOf(dto.getPrice())
+                    : BigDecimal.ZERO)                            // null-safe
+            .billNo(dto.getBillNo())
+            .billDate(dto.getBillDate())
+            .type(dto.getType())
+            .category(dto.getCategory())
+            .branch(dto.getBranch())
+            .recommendedYear(dto.getRecommendedYear() != null
+                    ? dto.getRecommendedYear() : 0)              // null-safe
+            .available(true)
+            .build();
 
-        return bookRepository.save(book);
-    }
-
+    return bookRepository.save(book);
+}
     // ==============================
     // PAGINATED CATALOGUE  ← PRIMARY endpoint for frontend
     // GET /books?page=0&size=20&branch=CSE&category=Programming&available=true
